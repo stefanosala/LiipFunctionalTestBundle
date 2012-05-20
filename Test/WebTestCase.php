@@ -165,7 +165,16 @@ abstract class WebTestCase extends BaseWebTestCase
      */
     protected function loadFixtures(array $classNames, $omName = null, $registryName = 'doctrine', $purgeMode = null)
     {
-        $container = $this->getContainer();
+        return self::loadFixturesClasses($this->getContainer(), $classNames, $omName, $registryName, $purgeMode);
+    }
+
+    /**
+     * Static implementation of WebTestCase::loadFixtures.
+     *
+     * @see WebTestCase::loadFixtures
+     */
+    protected static function loadFixturesClasses(ContainerInterface $container, array $classNames, $omName = null, $registryName = 'doctrine', $purgeMode = null)
+    {
         $registry = $container->get($registryName);
         if ($registry instanceof ManagerRegistry) {
             $om = $registry->getManager($omName);
@@ -226,7 +235,7 @@ abstract class WebTestCase extends BaseWebTestCase
             $executor->purge();
         }
 
-        $loader = $this->getFixtureLoader($container, $classNames);
+        $loader = static::getFixtureLoader($container, $classNames);
 
         $executor->execute($loader->getFixtures(), true);
 
@@ -246,14 +255,14 @@ abstract class WebTestCase extends BaseWebTestCase
      *
      * @return \Symfony\Bundle\DoctrineFixturesBundle\Common\DataFixtures\Loader
      */
-    protected function getFixtureLoader(ContainerInterface $container, array $classNames)
+    protected static function getFixtureLoader(ContainerInterface $container, array $classNames)
     {
         $loader = class_exists('Doctrine\\Bundle\\FixturesBundle\\Common\\DataFixtures\\Loader')
             ? new DoctrineFixturesLoader($container)
             : new SymfonyFixturesLoader($container);
 
         foreach ($classNames as $className) {
-            $this->loadFixtureClass($loader, $className);
+            static::loadFixtureClass($loader, $className);
         }
 
         return $loader;
@@ -265,7 +274,7 @@ abstract class WebTestCase extends BaseWebTestCase
      * @param \Symfony\Bundle\DoctrineFixturesBundle\Common\DataFixtures\Loader $loader
      * @param string $className
      */
-    protected function loadFixtureClass($loader, $className)
+    protected static function loadFixtureClass($loader, $className)
     {
         $fixture = new $className();
 
@@ -278,7 +287,7 @@ abstract class WebTestCase extends BaseWebTestCase
 
         if ($fixture instanceof DependentFixtureInterface) {
             foreach ($fixture->getDependencies() as $dependency) {
-                $this->loadFixtureClass($loader, $dependency);
+                static::loadFixtureClass($loader, $dependency);
             }
         }
     }
